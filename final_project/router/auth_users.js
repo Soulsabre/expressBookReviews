@@ -57,8 +57,34 @@ regd_users.post("/login", (req,res) => {
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    const isbn = req.params.isbn;
+    let book = books[isbn];
+
+    if(book){
+        let text = req.body.text;
+
+        if(isValid(req.session.username)){
+            if(text){
+                const reviewUsers = Object.keys(book.reviews);
+                let updated = false;
+                if (reviewUsers.length > 0){
+                    reviewUsers.forEach((name) =>{
+                        if(book.reviews[name] === req.session.username){
+                            book.reviews[name] = text;
+                            updated = true;
+                        }
+                    });
+                }
+                if(reviewUsers.length == 0 || !updated){
+                    books.reviews[req.session.username] = text;
+                }
+            }
+        }else{
+            return res.status(404).json({ message: "Review submitted by invalid user" });
+        }
+    }else{
+        return res.status(404).json({ message: "No book found with ISBN" });
+    }
 });
 
 module.exports.authenticated = regd_users;
