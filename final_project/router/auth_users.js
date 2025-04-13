@@ -60,23 +60,48 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
     const isbn = req.params.isbn;
     let text = req.body.text;
     let book = books[isbn];
+    let username = req.session.authorization['username'];
 
     if(book && text){
         const reviewUsers = Object.keys(book.reviews);
         let updated = false;
         if (reviewUsers.length > 0){
             reviewUsers.forEach((name) =>{
-                if(book.reviews[name] === req.user){
-                    book.reviews[name] = {"text": text};
+                if(name === username){
+                    book.reviews[name] = text;
                     updated = true;
                 }
             });
         }
         if(reviewUsers.length == 0 || !updated){
-            book.reviews[req.user] = { "text": text};
+            Object.assign(book.reviews, {[username]:  text});
         }
         books[isbn] = book;
-        return res.status(200).send("Review successfully added.");
+        return res.status(200).send({ message: "Review successfully added."});
+    }else{
+        return res.status(404).json({ message: "No book found with ISBN" });
+    }
+});
+
+//delete a book review
+regd_users.delete("/auth/review/:isbn", (req, res) =>{
+    const isbn = req.params.isbn;
+    let book = books[isbn];
+    let username = req.session.authorization['username'];
+
+    if(book){
+        const reviewUsers = Object.keys(book.reviews);
+        if (reviewUsers.length > 0){
+            reviewUsers.forEach((name) =>{
+                if(name === username){
+                   delete book.reviews[name];
+                }
+            });
+            books[isbn] = book;
+            return res.status(200).send({message:"Review successfully deleted."});
+        }else{
+            return res.status(404).send({message: "There are no reviews for this book."})
+        }
     }else{
         return res.status(404).json({ message: "No book found with ISBN" });
     }
